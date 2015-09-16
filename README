@@ -1,0 +1,40 @@
+This repository contains the evaluation system used in the ACM SIGMOD Programming Contest 2015.
+It supports automated sandboxed execution of untrusted code in a Docker environment. Besides 
+isolation, the user program can also be restricted to use only a certain amount of memory
+and limit its total runtime.
+
+The basic principle is to have two independent systems. One to host a dashboard where the users
+can submit their programs (SubSys) and a second for evaluation of these programs (EvalSys). For
+security purposes only SubSys should be able to connect to EvalSys and not the other way round.
+That way if the EvalSys becomes compromised due to bugs in the virtualization layer, it is not
+possible to also compromise the SubSys.
+
+On SubSys the submission_agent is responsible for tracking the incoming submissions and sending 
+them in timestamp order for execution to the EvalSys and also pushing the result of each submission
+into a database. On EvalSys the eval_agent is running and it will watch a folder for submissions that
+should be evaluated. These will be running using the sandbox scripts and the results will be put into
+a seperated folder. The submission_agent will periodically check this folder and copy the result files
+back, update the database and send the next submission for evaluation if one is available.
+
+During all these steps the user submission is only moved and copied. Only inside the container
+is it extracted and run. The sandbox bench script currently expects a submission to contain two files:
+	- ./compile.sh - Compiles the user program
+	- ./run.sh - Executes the user program
+Additionally it expects a testdriver program in the sandbox folder which is used to run the tests on 
+the user program. Before running the benchmark/test the bench.sh script warms up the input files by
+touching them once to enable more stable runtimes. Stdout and Stdin are logged and saved so that in
+case of problems, these could be made accessible to the submitters. These logs are truncated to 1kb
+each. The sandbox has a shared directory with the host system through which new files can be made 
+accessible during the benchmark. Each step, the extraction, compilation and execution of the user 
+program can be timed seperately.
+
+When allowing the submission through a web interface, the files should bestored under an artifical name
+and not the user name to avoid potential security risks. All agents are basically stateless and can
+automatically resume after e.g. a crash.
+
+The only dependencies are:
+	- ssh access from SubSys to EvalSys
+	- Docker, Java and Bash
+
+All programs are currently tailored for the SIGMOD Programming Contest 2015, but should be easily
+changeable to also support other kind of systems.

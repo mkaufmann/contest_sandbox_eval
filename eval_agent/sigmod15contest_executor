@@ -1,0 +1,45 @@
+#!/bin/sh
+SERVICE_NAME=ExecutionWorkflowController
+PATH_TO_JAR=/home/sigmod15contest/bin/ExecutionWorkflowController.jar
+PATH_TO_CONFIG=/home/sigmod15contest/bin/ewc_config.properties
+PATH_TO_STDOUT=/home/sigmod15contest/log/out.txt
+PATH_TO_STDERR=/home/sigmod15contest/log/err.txt
+PID_PATH_NAME=/tmp/ExecutionWorkflowController-pid
+case $1 in
+    start)
+        echo "Starting $SERVICE_NAME ..."
+        if ps ax | grep -v grep | grep -v $0 | grep $PATH_TO_JAR > /dev/null; then
+            echo "$SERVICE_NAME is already running ..."
+        else
+            nohup sudo -u sigmod15contest java -jar $PATH_TO_JAR $PATH_TO_CONFIG 2>> $PATH_TO_STDERR >> PATH_TO_STDOUT &
+                        echo $! > $PID_PATH_NAME
+            echo "$SERVICE_NAME started ..."
+        fi
+    ;;
+    stop)
+        if [ -f $PID_PATH_NAME ]; then
+            PID=$(cat $PID_PATH_NAME);
+            echo "$SERVICE_NAME stoping ..."
+            kill $PID;
+            echo "$SERVICE_NAME stopped ..."
+            rm $PID_PATH_NAME
+        else
+            echo "$SERVICE_NAME is not running ..."
+        fi
+    ;;
+    restart)
+        if [ -f $PID_PATH_NAME ]; then
+            PID=$(cat $PID_PATH_NAME);
+            echo "$SERVICE_NAME stopping ...";
+            kill $PID;
+            echo "$SERVICE_NAME stopped ...";
+            rm $PID_PATH_NAME
+            echo "$SERVICE_NAME starting ..."
+            nohup sudo -u sigmod15contest java -jar $PATH_TO_JAR $PATH_TO_CONFIG 2>> $PATH_TO_STDERR >> PATH_TO_STDOUT &
+                        echo $! > $PID_PATH_NAME
+            echo "$SERVICE_NAME started ..."
+        else
+            echo "$SERVICE_NAME is not running ..."
+        fi
+    ;;
+esac 
